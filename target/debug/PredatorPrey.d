@@ -1,1 +1,1 @@
-/home/DanielP/Escritorio/SistemaDinamicos/Mundo-ValleAburra/target/debug/PredatorPrey: /home/DanielP/Escritorio/SistemaDinamicos/Mundo-ValleAburra/src/main.rs
+/home/juanda/Desktop/EseJuego/Juegomrda/Mundo-ValleAburra/target/debug/PredatorPrey: /home/juanda/Desktop/EseJuego/Juegomrda/Mundo-ValleAburra/src/interfaz.rs /home/juanda/Desktop/EseJuego/Juegomrda/Mundo-ValleAburra/src/main.rs

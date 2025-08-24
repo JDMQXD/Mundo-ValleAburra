@@ -1,15 +1,25 @@
 use macroquad::prelude::*;
+use interfaz::Interfaz;
 
-#[macroquad::main("MyGame")]
+mod interfaz;
+
+fn window_conf() -> Conf {
+    Conf {
+        window_title: "MyGame".to_string(),
+        fullscreen: true,         
+        ..Default::default()
+    }
+}
+
+#[macroquad::main(window_conf)]
 async fn main() {
+    let mut app = Interfaz::new();
+
     loop {
-        clear_background(RED);
+        clear_background(BLACK);
 
-        draw_line(40.0, 40.0, 100.0, 200.0, 15.0, BLUE);
-        draw_rectangle(screen_width() / 2.0 - 60.0, 100.0, 120.0, 60.0, GREEN);
+        app.dibujar();
 
-        draw_text("Hello, Macroquad!", 20.0, 20.0, 30.0, DARKGRAY);
-
-        next_frame().await
+        next_frame().await;
     }
 }
