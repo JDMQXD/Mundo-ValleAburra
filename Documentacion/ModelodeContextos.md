@@ -1,8 +1,8 @@
 # **1. Modelo de Contextos**
 
 [
-	![Modelo de Contexto General](images/ModelodeContextos/1756939979827.png)
-](images/ModelodeContextos/1756939979827.png)
+	![ModeloDeContextoGeneral](Imagenes/1ModeloDeContexto.drawio.png)
+](Imagenes/1ModeloDeContexto.drawio.png)
 
 ## **1.1 Mapa**
 
