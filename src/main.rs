@@ -1,25 +1,25 @@
-use macroquad::prelude::*;
-use interfaz::Interfaz;
+mod models;
+mod world;
+mod predator;
 
-mod interfaz;
+use std::{thread, time::Duration};
+use crate::world::Mundo;
 
-fn window_conf() -> Conf {
-    Conf {
-        window_title: "MyGame".to_string(),
-        fullscreen: true,         
-        ..Default::default()
-    }
-}
+fn main() {
+    // Parámetros configurables
+    let duracion_dia_segundos: u64 = 60; // <- aquí controlas "un día = X segundos". Cámbialo a 10, 1, etc.
+    let mut mundo = Mundo::new();
 
-#[macroquad::main(window_conf)]
-async fn main() {
-    let mut app = Interfaz::new();
+    println!("Simulación depredador-presa (consola). Día dura {} segundos.", duracion_dia_segundos);
+    println!("Presiona Ctrl+C para detener.");
 
+    // Bucla principal: avanza días indefinidamente
     loop {
-        clear_background(BLACK);
+        let reporte = mundo.paso_dia();
+        println!("{}", reporte);
 
-        app.dibujar();
-
-        next_frame().await;
+        // Espera para simular el paso de un día en tiempo real
+        thread::sleep(Duration::from_secs(duracion_dia_segundos));
     }
 }
+

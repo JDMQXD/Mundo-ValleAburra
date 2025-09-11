@@ -1,3 +1,4 @@
+/* 
 use macroquad::prelude::*;
 
 #[derive(PartialEq)]
@@ -113,3 +114,4 @@ fn boton(texto: &str, x: f32, y: f32, ancho: f32, alto: f32) -> bool {
 
     dentro && is_mouse_button_pressed(MouseButton::Left)
 }
+*/
