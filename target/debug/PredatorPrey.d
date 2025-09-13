@@ -1,1 +1,0 @@
-/home/juanda/Desktop/EseJuego/Juegomrda/Mundo-ValleAburra/target/debug/PredatorPrey: /home/juanda/Desktop/EseJuego/Juegomrda/Mundo-ValleAburra/src/main.rs /home/juanda/Desktop/EseJuego/Juegomrda/Mundo-ValleAburra/src/models.rs /home/juanda/Desktop/EseJuego/Juegomrda/Mundo-ValleAburra/src/world.rs
