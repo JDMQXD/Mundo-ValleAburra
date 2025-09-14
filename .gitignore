@@ -1,0 +1,15 @@
+# Archivos generados por Rust
+/target
+
+# Archivos de dependencias
+Cargo.lock
+
+# Archivos de configuración de entorno
+.env
+
+# Archivos de editores comunes
+*.swp
+*.swo
+.DS_Store
+.idea/
+.vscode/
