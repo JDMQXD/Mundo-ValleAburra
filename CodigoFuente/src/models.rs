@@ -22,15 +22,16 @@ pub struct Animal {
     pub sexo: Sexo,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Depredador {
     pub id: u32,
     pub reserva_kg: f32, // comida almacenada
+    pub dias_sin_comer: u32,
 }
 
 impl Depredador {
     pub fn new(id: u32) -> Self {
-        Self { id, reserva_kg: 0.0 }
+        Self { id, reserva_kg: 0.0, dias_sin_comer: 0 }
     }
 
     pub fn consumir_diario(&mut self) -> bool {
