@@ -2,6 +2,7 @@ use rand::seq::SliceRandom;
 use rand::prelude::IteratorRandom;
 use rand::Rng;
 use crate::models::{Animal, ComportamientoAnimal, Depredador, Especie, Sexo};
+use std::collections::HashMap;
 
 pub struct Mundo {
     pub dia_actual: u32,
@@ -65,19 +66,36 @@ impl Mundo {
         }
 
         // Consumo diario
+        let mut vivos = Vec::new();
+
         for dep in &mut self.depredadores {
             if dep.consumir_diario() {
+                dep.dias_sin_comer = 0; // comió → reiniciar contador
                 reporte.push_str(&format!(
                     "Día {}: Depredador #{} consumió 1 kg. Reserva: {:.2} kg\n",
                     self.dia_actual, dep.id, dep.reserva_kg
                 ));
+                vivos.push(dep.clone());
             } else {
-                reporte.push_str(&format!(
-                    "Día {}: Depredador #{} no tenía suficiente reserva y está en riesgo.\n",
-                    self.dia_actual, dep.id
-                ));
+                dep.dias_sin_comer += 1;
+                if dep.dias_sin_comer >= 5 {
+                    reporte.push_str(&format!(
+                        "Día {}: Depredador #{} murió tras {} días sin comer.\n",
+                        self.dia_actual, dep.id, dep.dias_sin_comer
+                    ));
+                } else {
+                    reporte.push_str(&format!(
+                        "Día {}: Depredador #{} no comió (lleva {} días sin comer).\n",
+                        self.dia_actual, dep.id, dep.dias_sin_comer
+                    ));
+                    vivos.push(dep.clone());
+                }
             }
         }
+
+// reemplazar lista de depredadores por los que siguen vivos
+            self.depredadores = vivos;
+
 
         // Reproducción
         let mut nuevas_presas = Vec::new();
@@ -106,6 +124,23 @@ impl Mundo {
             ));
         }
         self.presas.extend(nuevas_presas);
+
+
+        // Resumen de presas
+        let mut mapa: HashMap<&Especie, usize> = HashMap::new();
+        for presa in &self.presas {
+            *mapa.entry(&presa.especie).or_insert(0) += 1;
+        }
+
+        reporte.push_str(&format!(
+            "=== Día {} - Resumen ===\nTotal presas: {}\n",
+            self.dia_actual,
+            self.presas.len()
+        ));
+        for (especie, count) in mapa {
+            reporte.push_str(&format!("- {:?}: {}\n", especie, count));
+        }
+
 
         reporte
     }
