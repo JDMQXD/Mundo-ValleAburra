@@ -23,14 +23,16 @@ impl Mundo {
         }
     }
 
-    // Funcion para agregar depredadores, con ayuda del FOR se le asignan los ID para que no se repitan
+    // Funcion para agregar depredadores, limitado a UNO solo según requisitos
     pub fn agregar_depredadores(&mut self, cantidad: u32) {
-        for i in 0..cantidad {
+        // Solo permitir UN depredador según los requisitos
+        let cantidad_real = if cantidad > 0 { 1 } else { 0 };
+        for i in 0..cantidad_real {
             self.depredadores.push(Depredador::new(i));
         }
     }
 
-    // Funcion para agregar animales (presas), con la misma forma de asignar ID como los depredadores
+    // Funcion para agregar animales (presas), nacen como crías (edad 0) y crecen hasta ser adultas
     pub fn agregar_presas(&mut self, especie: Especie, cantidad: u32) {
         let mut rng = rand::thread_rng();
         for _ in 0..cantidad {
@@ -41,7 +43,7 @@ impl Mundo {
             self.presas.push(Animal::new(
                 self.contador_animales,
                 especie.clone(),
-                especie.edad_adulta(), // Las presas nacen ya adultos
+                especie.edad_sacrificio(), // Las presas comienzan con edad de sacrificio para ser cazables
                 sexo,
             ));
         }
@@ -65,19 +67,42 @@ impl Mundo {
         // Cada depredador intenta cazar UNA presa si lo necesita
         for &i in &orden {
             let dep = &mut self.depredadores[i];
-            // Si la reserva es menor a 1 (osea que tiene hambre) empieza a cazar
-            if dep.reserva_kg < 1.0 {
-                // Elije la presa aleatoriamente.
-                // Primero ve cuantas presas hay (o si no hay) de 0 al tamano de la lista de las presas
-                // Segundo, aleatoriamente escoje una presa para cazar
-                if let Some(pos) = (0..self.presas.len()).choose(&mut rng) {
-                    // Cuando caze la presa removera la presa de la lista
-                    let presa = self.presas.remove(pos);
+            // Si necesita cazar (reserva menor al óptimo)
+            if dep.necesita_cazar() {
+                // Buscar presas que pueden ser cazadas (han alcanzado edad de sacrificio)
+                let mut presas_cazables: Vec<(usize, f32)> = self.presas
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, presa)| presa.puede_ser_cazado())
+                    .map(|(idx, presa)| (idx, presa.peso_kg))
+                    .collect();
+
+                if !presas_cazables.is_empty() {
+                    // Ordenar por peso (descendente) para obtener la más pesada
+                    presas_cazables.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+                    
+                    // Obtener todas las presas con el peso máximo (en caso de empate)
+                    let peso_maximo = presas_cazables[0].1;
+                    let presas_con_peso_maximo: Vec<usize> = presas_cazables
+                        .iter()
+                        .filter(|(_, peso)| (*peso - peso_maximo).abs() < 0.01) // Tolerancia para empates
+                        .map(|(idx, _)| *idx)
+                        .collect();
+
+                    // En caso de empate, elegir una al azar
+                    let pos_elegida = if presas_con_peso_maximo.len() == 1 {
+                        presas_con_peso_maximo[0]
+                    } else {
+                        *presas_con_peso_maximo.choose(&mut rng).unwrap()
+                    };
+
+                    // Cazar la presa seleccionada
+                    let presa = self.presas.remove(pos_elegida);
                     dep.cazar(&presa);
-                    // reporta la presa que cazo, cuanto peso y que especie fue la pobre
+                    // reporta la presa que cazo, cuanto peso y que especie fue
                     reporte.push_str(&format!(
-                        "Depredador #{} cazó presa ID {} ({:?}, {:.2} kg).\n",
-                        dep.id, presa.id, presa.especie, presa.peso_kg
+                        "Depredador #{} cazó presa ID {} ({:?}, {:.2} kg, {} días).\n",
+                        dep.id, presa.id, presa.especie, presa.peso_kg, presa.edad_dias
                     ));
                 }
             }
@@ -90,11 +115,11 @@ impl Mundo {
             // Si el depredador sigue vivo
             // Osea que cumple los requisitos de la funcion en models.rs
             if dep.esta_vivo() {
-                //Si el depredador esta vivo cada dia que pase va a consumir 1 kilo de la reserva
+                //Si el depredador esta vivo cada dia que pase va a consumir el nivel mínimo de la reserva
                 if comio {
                     reporte.push_str(&format!(
-                        "Depredador #{} consumió 1 kg. Reserva: {:.2} kg\n",
-                        dep.id, dep.reserva_kg
+                        "Depredador #{} consumió {:.1} kg. Reserva: {:.2} kg\n",
+                        dep.id, dep.nivel_minimo_diario, dep.reserva_kg
                     ));
                 } else {
                     reporte.push_str(&format!(
@@ -113,9 +138,27 @@ impl Mundo {
         }
         self.depredadores = vivos;
 
-        // Envejecer presas
-        for presa in &mut self.presas {
+        // Envejecer presas y verificar enfermedades
+        let mut presas_enfermas = Vec::new();
+        for (idx, presa) in self.presas.iter_mut().enumerate() {
             presa.envejecer_un_dia();
+            // Verificar si se enferma (probabilidad diaria)
+            if presa.verificar_enfermedad() {
+                presas_enfermas.push(idx);
+            }
+        }
+
+        // Remover presas que se enfermaron
+        if !presas_enfermas.is_empty() {
+            presas_enfermas.sort_unstable();
+            presas_enfermas.reverse(); // Remover desde el final para mantener índices válidos
+            for idx in presas_enfermas {
+                let presa_enferma = self.presas.remove(idx);
+                reporte.push_str(&format!(
+                    "Presa ID {} ({:?}) murió por enfermedad.\n",
+                    presa_enferma.id, presa_enferma.especie
+                ));
+            }
         }
 
         // Filtrar presas vivas (muerte por vejez), si no lo estan los elimina de la lista
@@ -164,9 +207,16 @@ impl Mundo {
         // Resumen de depredadores
         reporte.push_str(&format!("Depredadores vivos: {}\n", self.depredadores.len()));
         for dep in &self.depredadores {
+            let estado_alimentacion = if dep.reserva_kg >= dep.nivel_optimo_diario {
+                "Óptimo"
+            } else if dep.reserva_kg >= dep.nivel_minimo_diario {
+                "Mínimo"
+            } else {
+                "Hambriento"
+            };
             reporte.push_str(&format!(
-                "- Depredador #{} | Edad: {} días | Reserva: {:.2} kg | Días sin comer: {}\n",
-                dep.id, dep.edad_dias, dep.reserva_kg, dep.dias_sin_comer
+                "- Depredador #{} | Edad: {} días | Reserva: {:.2} kg | Estado: {} | Días sin comer: {}\n",
+                dep.id, dep.edad_dias, dep.reserva_kg, estado_alimentacion, dep.dias_sin_comer
             ));
         }
 
