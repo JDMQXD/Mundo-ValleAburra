@@ -1,24 +1,26 @@
 use rand::Rng;
 
-/// Especies de presas
+/// Aqui definimos las especies de presas que tendremos
 #[derive(Debug, Clone, Eq, Hash, PartialEq)]
 pub enum Especie {
     Conejo,
     Cabra,
     Vaca,
 }
-
+// Si son machos o hembras
 #[derive(Debug, Clone, PartialEq)]
 pub enum Sexo {
     Macho,
     Hembra,
 }
 
-// --- Curva de crecimiento Gompertz ---
+// Crecimiento gomperzt
 pub type GrowthFunction = Box<dyn Fn(u32) -> f32 + Send + Sync>;
 
+// funcion que usamos con gomperzt para ver el peso segun la edad del animlal
 pub fn create_growth_function(species: Especie) -> GrowthFunction {
     let (a, b, k) = match species {
+        // Peso, velocidad de creciemiento, curva de tiempo
         Especie::Conejo => (5.0, 2.5, 0.05),
         Especie::Cabra => (75.0, 2.8, 0.01),
         Especie::Vaca => (700.0, 3.0, 0.008),
@@ -54,12 +56,16 @@ impl Animal {
         }
     }
 
+    // Funcion que permite que cada dia que pase se sume uno
+    // y el peso se basa de la edad con la grompertz
     pub fn envejecer_un_dia(&mut self) {
         self.edad_dias += 1;
         self.peso_kg = (self.growth_fn)(self.edad_dias);
     }
 }
 
+// Lo clonamos manualmente para evitar problemas con el Box<dyn Fn(u32) porque no daba
+// problemas proque no nos dejaba clonarlo automaticamente
 impl Clone for Animal {
     fn clone(&self) -> Self {
         let growth_fn = create_growth_function(self.especie.clone());
@@ -74,7 +80,7 @@ impl Clone for Animal {
     }
 }
 
-/// Depredador avanzado
+/// Depredador 
 #[derive(Debug, Clone)]
 pub struct Depredador {
     pub id: u32,
@@ -89,16 +95,19 @@ impl Depredador {
         Self {
             id,
             edad_dias: 0,
-            edad_maxima: 4000, // configurable
+            edad_maxima: 4000,
             reserva_kg: 0.0,
             dias_sin_comer: 0,
         }
     }
 
+    // funcion que permite sumar un dia a los animales
     pub fn envejecer_un_dia(&mut self) {
         self.edad_dias += 1;
     }
 
+    // Funcion que nos dice cuando el animal comio algo mayor a 1 kilo que nos mande true
+    // Y si no come nada en el dia se le suma un dia sin comer
     pub fn consumir_diario(&mut self) -> bool {
         if self.reserva_kg >= 1.0 {
             self.reserva_kg -= 1.0;
@@ -110,16 +119,18 @@ impl Depredador {
         }
     }
 
+    // Cuando el depredador caza se le suma el peso del animal a la reserva del depredador
     pub fn cazar(&mut self, presa: &Animal) {
         self.reserva_kg += presa.peso_kg;
     }
 
+    // Funcion que nos dice que si cumple todas las condiciones como dias sin comer menor a 5 y las demas seguira vivo
     pub fn esta_vivo(&self) -> bool {
         self.dias_sin_comer < 5 && self.edad_dias < self.edad_maxima
     }
 }
 
-/// Parámetros de especies
+/// Parametros de las especies
 pub trait ComportamientoAnimal {
     fn edad_adulta(&self) -> u32;
     fn edad_maxima(&self) -> u32;

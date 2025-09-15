@@ -2,16 +2,21 @@ use macroquad::prelude::*;
 use crate::world::Mundo;
 use crate::models::Especie;
 
+// Estados
 enum Estado {
+    // El del formulario
     Formulario { paso: usize, input: String, depredadores: u32, conejos: u32, cabras: u32, vacas: u32 },
+    // El de la simulacion
     Simulacion { mundo: Mundo, reporte: Vec<String>, timer: f32 },
 }
 
 pub async fn run_app() {
+    // Inicializa el formulario
     let mut estado = Estado::Formulario { paso: 0, input: String::new(), depredadores: 0, conejos: 0, cabras: 0, vacas: 0 };
 
     loop {
         clear_background(LIGHTGRAY);
+
 
         match &mut estado {
             Estado::Formulario { paso, input, depredadores, conejos, cabras, vacas } => {
@@ -28,11 +33,13 @@ pub async fn run_app() {
                 if let Some(ch) = get_char_pressed() {
                     match ch {
                         '\r' | '\n' => {
+                            // Vuelve el valor a u32 y lo guarda en su variable correspondiente
                             let valor: u32 = input.trim().parse().unwrap_or(0);
                             match *paso {
                                 0 => *depredadores = valor,
                                 1 => *conejos = valor,
                                 2 => *cabras = valor,
+                                // Cuando pasan los 3 pasos (de pedir los valores) seguimos con la simulacion
                                 3 => {
                                     *vacas = valor;
                                     let mut mundo = Mundo::new();
@@ -48,6 +55,7 @@ pub async fn run_app() {
                             *paso += 1;
                             input.clear();
                         }
+                        // Eliminan caracteres, solo se aceptan digitos
                         '\u{8}' => { input.pop(); }
                         _ if ch.is_ascii_digit() => { input.push(ch); }
                         _ => {}
@@ -56,6 +64,7 @@ pub async fn run_app() {
             }
 
             Estado::Simulacion { mundo, reporte, timer } => {
+                // Control de la duracion del dia
                 *timer += get_frame_time();
                 if *timer >= 5.0 {
                     *timer = 0.0;
@@ -64,8 +73,8 @@ pub async fn run_app() {
                     reporte.push(rep);
                 }
 
-                // Cajitas de información
-                draw_box_with_text(20.0, 20.0, 300.0, 60.0, &format!("Día actual: {}", mundo.dia_actual));
+                // Cajitas de informacion
+                draw_box_with_text(20.0, 20.0, 300.0, 60.0, &format!("Dia actual: {}", mundo.dia_actual));
                 draw_box_with_text(20.0, 100.0, 300.0, 100.0, &format!("Depredadores: {}\nPresas: {}", mundo.depredadores.len(), mundo.presas.len()));
 
                 let conejos = mundo.presas.iter().filter(|a| a.especie == Especie::Conejo).count();
@@ -82,7 +91,7 @@ pub async fn run_app() {
         next_frame().await;
     }
 }
-
+// Crear caja
 fn draw_box_with_text(x: f32, y: f32, w: f32, h: f32, text: &str) {
     draw_rectangle(x, y, w, h, WHITE);
     draw_rectangle_lines(x, y, w, h, 2.0, BLACK);
